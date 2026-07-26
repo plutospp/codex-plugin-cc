@@ -8,6 +8,7 @@ This plugin is for Claude Code users who want an easy way to start using omp fro
 
 - `/omp:review` for a normal read-only omp review
 - `/omp:adversarial-review` for a steerable challenge review
+- `/omp:commit` to commit changes using omp's commit model role
 - `/omp:rescue`, `/omp:transfer`, `/omp:status`, `/omp:result`, and `/omp:cancel` to delegate work, hand off sessions, and manage background jobs
 
 ## Requirements
@@ -117,6 +118,25 @@ Examples:
 ```
 
 This command is read-only. It does not fix code.
+
+### `/omp:commit`
+
+Commits your current changes using omp's `commit` model role.
+
+Use it when you want omp to:
+
+- review your staged and unstaged changes and create a well-structured git commit
+- generate a clear, conventional commit message from the actual diff
+
+Examples:
+
+```bash
+/omp:commit
+/omp:commit group the test changes into a separate commit
+/omp:commit --background
+```
+
+This command is write-capable — it will stage and commit files.
 
 ### `/omp:rescue`
 
@@ -235,6 +255,12 @@ When the review gate is enabled, the plugin uses a `Stop` hook to run a targeted
 
 ```bash
 /omp:review
+```
+
+### Commit Your Work
+
+```bash
+/omp:commit
 ```
 
 ### Hand A Problem To omp

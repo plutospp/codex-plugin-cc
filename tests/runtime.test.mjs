@@ -148,6 +148,36 @@ test("review runs with a read-only tool allowlist and no approval mode", () => {
   assert.equal(state.lastApprovalMode, null);
 });
 
+test("review defaults to the @slow model role", () => {
+  const repo = makeTempDir();
+  const binDir = makeTempDir();
+  installFakeOmp(binDir, "adversarial-clean");
+  initGitRepo(repo);
+  commitFile(repo, "README.md", "hello\n");
+  fs.writeFileSync(path.join(repo, "README.md"), "hello again\n");
+
+  const result = run("node", [SCRIPT, "review"], { cwd: repo, env: buildEnv(binDir) });
+
+  assert.equal(result.status, 0, result.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(binDir, "fake-omp-state.json"), "utf8"));
+  assert.equal(state.lastPrompt.model, "@slow");
+});
+
+test("review respects an explicit --model override", () => {
+  const repo = makeTempDir();
+  const binDir = makeTempDir();
+  installFakeOmp(binDir, "adversarial-clean");
+  initGitRepo(repo);
+  commitFile(repo, "README.md", "hello\n");
+  fs.writeFileSync(path.join(repo, "README.md"), "hello again\n");
+
+  const result = run("node", [SCRIPT, "review", "--model", "gpt-5.4-mini"], { cwd: repo, env: buildEnv(binDir) });
+
+  assert.equal(result.status, 0, result.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(binDir, "fake-omp-state.json"), "utf8"));
+  assert.equal(state.lastPrompt.model, "gpt-5.4-mini");
+});
+
 test("adversarial review renders structured findings", () => {
   const repo = makeTempDir();
   const binDir = makeTempDir();
@@ -475,6 +505,42 @@ test("cancel reports no active jobs when nothing is running for this session", (
   const cancel = run("node", [SCRIPT, "cancel", "--json"], { cwd: workspace, env });
   assert.equal(cancel.status, 1);
   assert.match(cancel.stderr, /No active omp jobs to cancel for this session\./);
+});
+
+// ---------------------------------------------------------------------------
+// commit
+// ---------------------------------------------------------------------------
+
+test("commit defaults to the @commit model role with write enabled", () => {
+  const repo = makeTempDir();
+  const binDir = makeTempDir();
+  installFakeOmp(binDir);
+  initGitRepo(repo);
+  commitFile(repo, "src/app.js", "export const value = 1;\n");
+  fs.writeFileSync(path.join(repo, "src", "app.js"), "export const value = 2;\n");
+
+  const result = run("node", [SCRIPT, "commit"], { cwd: repo, env: buildEnv(binDir) });
+
+  assert.equal(result.status, 0, result.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(binDir, "fake-omp-state.json"), "utf8"));
+  assert.equal(state.lastPrompt.model, "@commit");
+  assert.equal(state.lastApprovalMode, "yolo");
+  assert.match(state.lastPrompt.message, /Commit the current changes/);
+});
+
+test("commit appends extra instructions to the prompt", () => {
+  const repo = makeTempDir();
+  const binDir = makeTempDir();
+  installFakeOmp(binDir);
+  initGitRepo(repo);
+  commitFile(repo, "src/app.js", "export const value = 1;\n");
+  fs.writeFileSync(path.join(repo, "src", "app.js"), "export const value = 2;\n");
+
+  const result = run("node", [SCRIPT, "commit", "use", "conventional", "format"], { cwd: repo, env: buildEnv(binDir) });
+
+  assert.equal(result.status, 0, result.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(binDir, "fake-omp-state.json"), "utf8"));
+  assert.match(state.lastPrompt.message, /Commit the current changes\. use conventional format/);
 });
 
 // ---------------------------------------------------------------------------

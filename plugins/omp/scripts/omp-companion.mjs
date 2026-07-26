@@ -65,6 +65,7 @@ function printUsage() {
       "  node scripts/omp-companion.mjs review [--wait|--background] [--base <ref>] [--scope <auto|working-tree|branch>] [focus text]",
       "  node scripts/omp-companion.mjs adversarial-review [--wait|--background] [--base <ref>] [--scope <auto|working-tree|branch>] [focus text]",
       "  node scripts/omp-companion.mjs task [--background] [--write] [--resume-last|--resume|--fresh] [--model <model>] [--thinking <off|minimal|low|medium|high|xhigh|max>] [prompt]",
+      "  node scripts/omp-companion.mjs commit [--background] [--model <model>] [extra commit instructions]",
       "  node scripts/omp-companion.mjs transfer [--source <claude-jsonl>] [--json]",
       "  node scripts/omp-companion.mjs status [job-id] [--all] [--json]",
       "  node scripts/omp-companion.mjs result [job-id] [--json]",
@@ -546,6 +547,9 @@ function getJobKindLabel(kind, jobClass) {
   if (kind === "adversarial-review") {
     return "adversarial-review";
   }
+  if (kind === "commit") {
+    return "commit";
+  }
   return jobClass === "review" ? "review" : "rescue";
 }
 
@@ -733,7 +737,7 @@ async function handleReviewCommand(argv, config) {
         cwd,
         base: options.base,
         scope: options.scope,
-        model: options.model,
+        model: options.model ?? "@slow",
         focusText,
         reviewName: config.reviewName,
         onProgress: progress
@@ -759,7 +763,7 @@ async function handleTask(argv) {
 
   const cwd = resolveCommandCwd(options);
   const workspaceRoot = resolveCommandWorkspace(options);
-  const model = normalizeRequestedModel(options.model);
+  const model = normalizeRequestedModel(options.model) ?? "@default";
   const thinking = normalizeThinkingLevel(options.thinking);
   const prompt = readTaskPrompt(cwd, options, positionals);
 
@@ -804,6 +808,76 @@ async function handleTask(argv) {
         prompt,
         write,
         resumeLast,
+        jobId: job.id,
+        onProgress: progress
+      }),
+    { json: options.json }
+  );
+}
+
+async function handleCommit(argv) {
+  const { options, positionals } = parseCommandInput(argv, {
+    valueOptions: ["model", "cwd"],
+    booleanOptions: ["json", "background"],
+    aliasMap: {
+      m: "model"
+    }
+  });
+
+  const cwd = resolveCommandCwd(options);
+  const workspaceRoot = resolveCommandWorkspace(options);
+  const model = normalizeRequestedModel(options.model) ?? "@commit";
+  const extraInstructions = positionals.join(" ").trim();
+  const prompt = extraInstructions
+    ? `Commit the current changes. ${extraInstructions}`
+    : "Commit the current changes.";
+
+  if (options.background) {
+    ensureOmpAvailable(cwd);
+    const taskMetadata = buildTaskRunMetadata({ prompt, resumeLast: false });
+    const job = createCompanionJob({
+      prefix: "commit",
+      kind: "commit",
+      title: "omp Commit",
+      workspaceRoot,
+      jobClass: "task",
+      summary: taskMetadata.summary,
+      write: true
+    });
+    const request = buildTaskRequest({
+      cwd,
+      model,
+      thinking: null,
+      prompt,
+      write: true,
+      resumeLast: false,
+      jobId: job.id
+    });
+    const { payload } = enqueueBackgroundTask(cwd, job, request);
+    outputCommandResult(payload, renderQueuedTaskLaunch(payload), options.json);
+    return;
+  }
+
+  const taskMetadata = buildTaskRunMetadata({ prompt, resumeLast: false });
+  const job = createCompanionJob({
+    prefix: "commit",
+    kind: "commit",
+    title: "omp Commit",
+    workspaceRoot,
+    jobClass: "task",
+    summary: taskMetadata.summary,
+    write: true
+  });
+  await runForegroundCommand(
+    job,
+    (progress) =>
+      executeTaskRun({
+        cwd,
+        model,
+        thinking: null,
+        prompt,
+        write: true,
+        resumeLast: false,
         jobId: job.id,
         onProgress: progress
       }),
@@ -1025,6 +1099,9 @@ async function main() {
       break;
     case "task":
       await handleTask(argv);
+      break;
+    case "commit":
+      await handleCommit(argv);
       break;
     case "transfer":
       await handleTransfer(argv);

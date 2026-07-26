@@ -76,6 +76,7 @@ test("continue is not exposed as a user-facing command", () => {
   assert.deepEqual(commandFiles, [
     "adversarial-review.md",
     "cancel.md",
+    "commit.md",
     "rescue.md",
     "result.md",
     "review.md",
@@ -221,4 +222,16 @@ test("setup command can offer omp install and points users to provider login", (
   assert.match(readme, /offer to install omp for you/i);
   assert.match(readme, /\/omp:setup --enable-review-gate/);
   assert.match(readme, /\/omp:setup --disable-review-gate/);
+});
+
+test("commit command delegates to the companion commit subcommand", () => {
+  const commit = read("commands/commit.md");
+  const readme = fs.readFileSync(path.join(ROOT, "README.md"), "utf8");
+
+  assert.match(commit, /disable-model-invocation:\s*true/);
+  assert.match(commit, /omp-companion\.mjs" commit "\$ARGUMENTS"/);
+  assert.match(commit, /\[--background\] \[--model <model>\] \[extra commit instructions\]/);
+  assert.match(commit, /Return the command output verbatim/i);
+  assert.match(readme, /### `\/omp:commit`/);
+  assert.match(readme, /commit model role/i);
 });
