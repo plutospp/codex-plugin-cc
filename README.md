@@ -1,22 +1,18 @@
-# Codex plugin for Claude Code
+# omp plugin for Claude Code
 
-Use Codex from inside Claude Code for code reviews or to delegate tasks to Codex.
+Use [omp](https://github.com/oh-my-pi/pi-coding-agent) (the Oh My Pi coding agent CLI) from inside Claude Code for code reviews or to delegate tasks to omp.
 
-This plugin is for Claude Code users who want an easy way to start using Codex from the workflow
-they already have.
-
-<video src="./docs/plugin-demo.webm" controls muted playsinline autoplay></video>
+This plugin is for Claude Code users who want an easy way to start using omp from the workflow they already have.
 
 ## What You Get
 
-- `/codex:review` for a normal read-only Codex review
-- `/codex:adversarial-review` for a steerable challenge review
-- `/codex:rescue`, `/codex:transfer`, `/codex:status`, `/codex:result`, and `/codex:cancel` to delegate work, hand off sessions, and manage background jobs
+- `/omp:review` for a normal read-only omp review
+- `/omp:adversarial-review` for a steerable challenge review
+- `/omp:rescue`, `/omp:transfer`, `/omp:status`, `/omp:result`, and `/omp:cancel` to delegate work, hand off sessions, and manage background jobs
 
 ## Requirements
 
-- **ChatGPT subscription (incl. Free) or OpenAI API key.**
-  - Usage will contribute to your Codex usage limits. [Learn more](https://developers.openai.com/codex/pricing).
+- **omp installed and at least one model provider authenticated.** omp supports many providers — Anthropic, OpenAI, Google, Groq, OpenRouter, Mistral, xAI, local engines like Ollama, and custom gateways — not a single fixed login flow. Usage contributes to whichever provider's usage limits you authenticate against.
 - **Node.js 18.18 or later**
 
 ## Install
@@ -24,13 +20,13 @@ they already have.
 Add the marketplace in Claude Code:
 
 ```bash
-/plugin marketplace add openai/codex-plugin-cc
+/plugin marketplace add omp
 ```
 
 Install the plugin:
 
 ```bash
-/plugin install codex@openai-codex
+/plugin install omp@omp
 ```
 
 Reload plugins:
@@ -42,41 +38,39 @@ Reload plugins:
 Then run:
 
 ```bash
-/codex:setup
+/omp:setup
 ```
 
-`/codex:setup` will tell you whether Codex is ready. If Codex is missing and npm is available, it can offer to install Codex for you.
+`/omp:setup` will tell you whether omp is ready. If omp is missing and npm is available, it can offer to install omp for you.
 
-If you prefer to install Codex yourself, use:
+If you prefer to install omp yourself, use:
 
 ```bash
-npm install -g @openai/codex
+npm install -g @oh-my-pi/pi-coding-agent
 ```
 
-If Codex is installed but not logged in yet, run:
+(or `bun install -g @oh-my-pi/pi-coding-agent` if you use Bun.)
 
-```bash
-!codex login
-```
+If omp is installed but no model provider is authenticated yet, run `omp` interactively once and sign in through `/login`.
 
 After install, you should see:
 
 - the slash commands listed below
-- the `codex:codex-rescue` subagent in `/agents`
+- the `omp:omp-rescue` subagent in `/agents`
 
 One simple first run is:
 
 ```bash
-/codex:review --background
-/codex:status
-/codex:result
+/omp:review --background
+/omp:status
+/omp:result
 ```
 
 ## Usage
 
-### `/codex:review`
+### `/omp:review`
 
-Runs a normal Codex review on your current work. It gives you the same quality of code review as running `/review` inside Codex directly.
+Runs an omp code review on your current work.
 
 > [!NOTE]
 > Code review especially for multi-file changes might take a while. It's generally recommended to run it in the background.
@@ -86,26 +80,27 @@ Use it when you want:
 - a review of your current uncommitted changes
 - a review of your branch compared to a base branch like `main`
 
-Use `--base <ref>` for branch review. It also supports `--wait` and `--background`. It is not steerable and does not take custom focus text. Use [`/codex:adversarial-review`](#codexadversarial-review) when you want to challenge a specific decision or risk area.
+Use `--base <ref>` for branch review. It also supports `--wait`, `--background`, and trailing focus text to steer what the reviewer looks for. Use [`/omp:adversarial-review`](#ompadversarial-review) when you want a more skeptical, design-challenging pass instead.
 
 Examples:
 
 ```bash
-/codex:review
-/codex:review --base main
-/codex:review --background
+/omp:review
+/omp:review --base main
+/omp:review --background
+/omp:review focus on the retry and rollback logic
 ```
 
-This command is read-only and will not perform any changes. When run in the background you can use [`/codex:status`](#codexstatus) to check on the progress and [`/codex:cancel`](#codexcancel) to cancel the ongoing task.
+This command is read-only and will not perform any changes. When run in the background you can use [`/omp:status`](#ompstatus) to check on the progress and [`/omp:cancel`](#ompcancel) to cancel the ongoing task.
 
-### `/codex:adversarial-review`
+### `/omp:adversarial-review`
 
 Runs a **steerable** review that questions the chosen implementation and design.
 
 It can be used to pressure-test assumptions, tradeoffs, failure modes, and whether a different approach would have been safer or simpler.
 
-It uses the same review target selection as `/codex:review`, including `--base <ref>` for branch review.
-It also supports `--wait` and `--background`. Unlike `/codex:review`, it can take extra focus text after the flags.
+It uses the same review target selection as `/omp:review`, including `--base <ref>` for branch review.
+It also supports `--wait` and `--background`, plus extra focus text after the flags.
 
 Use it when you want:
 
@@ -116,76 +111,74 @@ Use it when you want:
 Examples:
 
 ```bash
-/codex:adversarial-review
-/codex:adversarial-review --base main challenge whether this was the right caching and retry design
-/codex:adversarial-review --background look for race conditions and question the chosen approach
+/omp:adversarial-review
+/omp:adversarial-review --base main challenge whether this was the right caching and retry design
+/omp:adversarial-review --background look for race conditions and question the chosen approach
 ```
 
 This command is read-only. It does not fix code.
 
-### `/codex:rescue`
+### `/omp:rescue`
 
-Hands a task to Codex through the `codex:codex-rescue` subagent.
+Hands a task to omp through the `omp:omp-rescue` subagent.
 
-Use it when you want Codex to:
+Use it when you want omp to:
 
 - investigate a bug
 - try a fix
-- continue a previous Codex task
+- continue a previous omp task
 - take a faster or cheaper pass with a smaller model
 
 > [!NOTE]
 > Depending on the task and the model you choose these tasks might take a long time and it's generally recommended to force the task to be in the background or move the agent to the background.
 
-It supports `--background`, `--wait`, `--resume`, and `--fresh`. If you omit `--resume` and `--fresh`, the plugin can offer to continue the latest rescue thread for this repo.
+It supports `--background`, `--wait`, `--resume`, and `--fresh`. If you omit `--resume` and `--fresh`, the plugin can offer to continue the latest rescue session for this repo.
 
 Examples:
 
 ```bash
-/codex:rescue investigate why the tests started failing
-/codex:rescue fix the failing test with the smallest safe patch
-/codex:rescue --resume apply the top fix from the last run
-/codex:rescue --model gpt-5.4-mini --effort medium investigate the flaky integration test
-/codex:rescue --model spark fix the issue quickly
-/codex:rescue --background investigate the regression
+/omp:rescue investigate why the tests started failing
+/omp:rescue fix the failing test with the smallest safe patch
+/omp:rescue --resume apply the top fix from the last run
+/omp:rescue --model gpt-5.4-mini --thinking medium investigate the flaky integration test
+/omp:rescue --background investigate the regression
 ```
 
-You can also just ask for a task to be delegated to Codex:
+You can also just ask for a task to be delegated to omp:
 
 ```text
-Ask Codex to redesign the database connection to be more resilient.
+Ask omp to redesign the database connection to be more resilient.
 ```
 
 **Notes:**
 
-- if you do not pass `--model` or `--effort`, Codex chooses its own defaults.
-- if you say `spark`, the plugin maps that to `gpt-5.3-codex-spark`
-- follow-up rescue requests can continue the latest Codex task in the repo
+- if you do not pass `--model` or `--thinking`, omp chooses its own defaults.
+- follow-up rescue requests can continue the latest omp task in the repo
 
-### `/codex:transfer`
+### `/omp:transfer`
 
-Creates a persistent Codex thread from the current Claude Code session and prints a `codex resume <session-id>` command.
+Writes a condensed markdown handoff file from the current Claude Code session and prints an `omp "@<path>"` command to continue the conversation in omp.
 
-Use it when you started a debugging or implementation conversation in Claude Code and want to continue that same context directly in Codex.
+Use it when you started a debugging or implementation conversation in Claude Code and want to continue that same context directly in omp.
 
 Examples:
 
 ```bash
-/codex:transfer
-/codex:transfer --source ~/.claude/projects/-Users-me-repo/<session-id>.jsonl
+/omp:transfer
+/omp:transfer --source ~/.claude/projects/-Users-me-repo/<session-id>.jsonl
 ```
 
-The plugin's existing `SessionStart` hook supplies the current transcript path automatically; `--source` is available as a manual override. The transfer uses Codex's external-agent session importer, so it follows the same conversion rules as importing Claude history in the Codex App and creates visible turns that can be continued in the App or TUI. The source must be under `~/.claude/projects`, and older Codex versions that do not expose session import must be upgraded before using this command.
+The plugin's existing `SessionStart` hook supplies the current transcript path automatically; `--source` is available as a manual override. The source must be under `~/.claude/projects`. omp has no native external-agent session import, so this produces a plain markdown file rather than a resumable native session — omp loads it directly via its `@file` message-argument convention.
 
-### `/codex:status`
+### `/omp:status`
 
-Shows running and recent Codex jobs for the current repository.
+Shows running and recent omp jobs for the current repository.
 
 Examples:
 
 ```bash
-/codex:status
-/codex:status task-abc123
+/omp:status
+/omp:status task-abc123
 ```
 
 Use it to:
@@ -194,127 +187,112 @@ Use it to:
 - see the latest completed job
 - confirm whether a task is still running
 
-### `/codex:result`
+### `/omp:result`
 
-Shows the final stored Codex output for a finished job.
-When available, it also includes the Codex session ID so you can reopen that run directly in Codex with `codex resume <session-id>`.
-
-Examples:
-
-```bash
-/codex:result
-/codex:result task-abc123
-```
-
-### `/codex:cancel`
-
-Cancels an active background Codex job.
+Shows the final stored omp output for a finished job.
+When available, it also includes the omp session ID so you can reopen that run directly with `omp -r <session-id>`.
 
 Examples:
 
 ```bash
-/codex:cancel
-/codex:cancel task-abc123
+/omp:result
+/omp:result task-abc123
 ```
 
-### `/codex:setup`
+### `/omp:cancel`
 
-Checks whether Codex is installed and authenticated.
-If Codex is missing and npm is available, it can offer to install Codex for you.
+Cancels an active background omp job.
 
-You can also use `/codex:setup` to manage the optional review gate.
+Examples:
+
+```bash
+/omp:cancel
+/omp:cancel task-abc123
+```
+
+### `/omp:setup`
+
+Checks whether omp is installed and authenticated.
+If omp is missing and npm is available, it can offer to install omp for you.
+
+You can also use `/omp:setup` to manage the optional review gate.
 
 #### Enabling review gate
 
 ```bash
-/codex:setup --enable-review-gate
-/codex:setup --disable-review-gate
+/omp:setup --enable-review-gate
+/omp:setup --disable-review-gate
 ```
 
-When the review gate is enabled, the plugin uses a `Stop` hook to run a targeted Codex review based on Claude's response. If that review finds issues, the stop is blocked so Claude can address them first.
+When the review gate is enabled, the plugin uses a `Stop` hook to run a targeted omp review based on Claude's response. If that review finds issues, the stop is blocked so Claude can address them first.
 
 > [!WARNING]
-> The review gate can create a long-running Claude/Codex loop and may drain usage limits quickly. Only enable it when you plan to actively monitor the session.
+> The review gate can create a long-running Claude/omp loop and may drain usage limits quickly. Only enable it when you plan to actively monitor the session.
 
 ## Typical Flows
 
 ### Review Before Shipping
 
 ```bash
-/codex:review
+/omp:review
 ```
 
-### Hand A Problem To Codex
+### Hand A Problem To omp
 
 ```bash
-/codex:rescue investigate why the build is failing in CI
+/omp:rescue investigate why the build is failing in CI
 ```
 
 ### Start Something Long-Running
 
 ```bash
-/codex:adversarial-review --background
-/codex:rescue --background investigate the flaky test
+/omp:adversarial-review --background
+/omp:rescue --background investigate the flaky test
 ```
 
 Then check in with:
 
 ```bash
-/codex:status
-/codex:result
+/omp:status
+/omp:result
 ```
 
-## Codex Integration
+## omp Integration
 
-The Codex plugin wraps the [Codex app server](https://developers.openai.com/codex/app-server). It uses the global `codex` binary installed in your environment and [applies the same configuration](https://developers.openai.com/codex/config-basic).
+The omp plugin wraps the [omp CLI's RPC mode](https://github.com/oh-my-pi/pi-coding-agent) (`omp --mode rpc`). It uses the global `omp` binary installed in your environment.
+
+Each job spawns its own `omp` process — there is no shared background server. Read-only commands (`/omp:review`, `/omp:adversarial-review`) run with a restricted tool set (no `bash`, `edit`, or `write`); omp has no OS-level sandbox, so this tool restriction is what enforces read-only behavior, not filesystem isolation. Write-capable runs (`/omp:rescue --write`, the default for rescue) run with the full tool set and auto-approval, since a headless run cannot answer interactive approval prompts.
 
 ### Common Configurations
 
-If you want to change the default reasoning effort or the default model that gets used by the plugin, you can define that inside your user-level or project-level `config.toml`. For example to always use `gpt-5.4-mini` on `high` for a specific project you can add the following to a `.codex/config.toml` file at the root of the directory you started Claude in:
+Pass `--model <model>` to pin a specific model (fuzzy-matched, e.g. `gpt-5.4-mini`, `opus`, `openai/gpt-5.2`) and `--thinking <level>` to control reasoning effort (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). If you omit them, omp uses its own configured defaults — see omp's own configuration docs for setting a default model or provider.
 
-```toml
-model = "gpt-5.4-mini"
-model_reasoning_effort = "high"
-```
+### Prompt size limits
 
-Your configuration will be picked up based on:
-
-- user-level config in `~/.codex/config.toml`
-- project-level overrides in `.codex/config.toml`
-- project-level overrides only load when the [project is trusted](https://developers.openai.com/codex/config-advanced#project-config-files-codexconfigtoml)
-
-Check out the Codex docs for more [configuration options](https://developers.openai.com/codex/config-reference).
-
-### Moving The Work Over To Codex
-
-Delegated tasks and any [stop gate](#what-does-the-review-gate-do) run can also be directly resumed inside Codex by running `codex resume` either with the specific session ID you received from running `/codex:result` or `/codex:status` or by selecting it from the list.
-
-This way you can review the Codex work or continue the work there.
+omp's RPC protocol caps each frame at 1 MiB. Review prompts embed git diffs, so very large branch reviews may have their inline diff content trimmed to fit; when that happens, the rendered review output says so explicitly rather than silently reviewing partial context.
 
 ## FAQ
 
-### Do I need a separate Codex account for this plugin?
+### Do I need a separate omp account for this plugin?
 
-If you are already signed into Codex on this machine, that account should work immediately here too. This plugin uses your local Codex CLI authentication.
+If you already use omp on this machine, that account should work immediately here too. This plugin uses your local omp CLI authentication and picks up whichever model provider you've signed in to.
 
-If you only use Claude Code today and have not used Codex yet, you will also need to sign in to Codex with either a ChatGPT account or an API key. [Codex is available with your ChatGPT subscription](https://developers.openai.com/codex/pricing/), and [`codex login`](https://developers.openai.com/codex/cli/reference/#codex-login) supports both ChatGPT and API key sign-in. Run `/codex:setup` to check whether Codex is ready, and use `!codex login` if it is not.
+If you only use Claude Code today and have not used omp yet, run `omp` interactively once and sign in to a model provider through `/login`. Run `/omp:setup` to check whether omp is ready.
 
-### Does the plugin use a separate Codex runtime?
+### Does the plugin use a separate omp runtime?
 
-No. This plugin delegates through your local [Codex CLI](https://developers.openai.com/codex/cli/) and [Codex app server](https://developers.openai.com/codex/app-server/) on the same machine.
+No. This plugin delegates through your local omp CLI on the same machine, spawning `omp --mode rpc` per job.
 
 That means:
 
-- it uses the same Codex install you would use directly
+- it uses the same omp install you would use directly
 - it uses the same local authentication state
 - it uses the same repository checkout and machine-local environment
 
-### Will it use the same Codex config I already have?
+### Will it use the same omp config I already have?
 
-Yes. If you already use Codex, the plugin picks up the same [configuration](#common-configurations).
+Yes. If you already use omp, the plugin picks up the same configuration and authenticated providers.
 
-### Can I keep using my current API key or base URL setup?
+### Can I keep using my current API key setup?
 
-Yes. Because the plugin uses your local Codex CLI, your existing sign-in method and config still apply.
-
-If you need to point the built-in OpenAI provider at a different endpoint, set `openai_base_url` in your [Codex config](https://developers.openai.com/codex/config-advanced/#config-and-state-locations).
+Yes. Because the plugin uses your local omp CLI, your existing sign-in method and provider configuration still apply.

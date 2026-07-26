@@ -1,21 +1,21 @@
 {
-  "name": "openai-codex",
+  "name": "omp",
   "owner": {
-    "name": "OpenAI"
+    "name": "Community"
   },
   "metadata": {
-    "description": "Codex plugins to use in Claude Code for delegation and code review.",
-    "version": "1.0.6"
+    "description": "omp plugin to use in Claude Code for delegation and code review.",
+    "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "codex",
-      "description": "Use Codex from Claude Code to review code or delegate tasks.",
-      "version": "1.0.6",
+      "name": "omp",
+      "description": "Use omp from Claude Code to review code or delegate tasks.",
+      "version": "1.0.0",
       "author": {
-        "name": "OpenAI"
+        "name": "Community"
       },
-      "source": "./plugins/codex"
+      "source": "./plugins/omp"
     }
   ]
 }

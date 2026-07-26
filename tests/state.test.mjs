@@ -5,7 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { makeTempDir } from "./helpers.mjs";
-import { resolveJobFile, resolveJobLogFile, resolveStateDir, resolveStateFile, saveState } from "../plugins/codex/scripts/lib/state.mjs";
+import { resolveJobFile, resolveJobLogFile, resolveStateDir, resolveStateFile, saveState } from "../plugins/omp/scripts/lib/state.mjs";
 
 test("resolveStateDir uses a temp-backed per-workspace directory", () => {
   const workspace = makeTempDir();
@@ -65,7 +65,7 @@ test("saveState prunes dropped job artifacts when indexed jobs exceed the cap", 
     stateFile,
     `${JSON.stringify(
       {
-        version: 1,
+        version: 2,
         config: { stopReviewGate: false },
         jobs
       },
@@ -76,7 +76,7 @@ test("saveState prunes dropped job artifacts when indexed jobs exceed the cap", 
   );
 
   saveState(workspace, {
-    version: 1,
+    version: 2,
     config: { stopReviewGate: false },
     jobs
   });
